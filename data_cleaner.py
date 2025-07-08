@@ -9,9 +9,10 @@ from sklearn.impute import SimpleImputer, KNNImputer
 from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
-
+from data_collector import MarketDataCollector
 from logger import TradingLogger
 from utils import ConfigManager, DataUtils
+import asyncio
 
 
 class OutlierDetector:

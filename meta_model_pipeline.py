@@ -20,6 +20,7 @@ from logger import TradingLogger
 from utils import ConfigManager, TimeUtils
 from market_environment import MarketEnvironmentClassifier, MarketState
 from ml_strategy import MLStrategy, TradingSignal
+from ml_strategy import TradingAction
 from train_rl import PPOAgent, A2CAgent
 from database_manager import DatabaseManager
 

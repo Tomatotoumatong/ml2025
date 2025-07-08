@@ -257,7 +257,7 @@ async def async_retry(
         except Exception as e:
             last_exception = e
             
-            if attempt < self.max_retries:
+            if attempt < max_retries:
                 await asyncio.sleep(current_delay)
                 current_delay *= backoff
             else:

@@ -20,8 +20,9 @@ from logger import TradingLogger
 from utils import ConfigManager, TimeUtils
 from lock_manager import LockManager
 from database_manager import DatabaseManager
-from data_collector import DataCollector
-from vnpy_integration import VNPYIntegration, TradingSignal
+from data_collector import MarketDataCollector as DataCollector
+from vnpy_integration import VNPYIntegration
+from vnpy_integration import TradingSignal as VNPYTradingSignal
 from risk_manager import RiskManager
 from meta_model_pipeline import MetaModelPipeline
 from system_monitor import SystemMonitor
@@ -105,7 +106,7 @@ class STARK4App:
                 self.logger.info("成功恢复系统状态")
             
             # 3. 初始化数据库
-            self.db_manager = DatabaseManager(self.config)
+            self.db_manager = DatabaseManager(self.config_path)
             await self.db_manager.initialize()
             
             # 4. 初始化系统监控
@@ -262,7 +263,7 @@ class STARK4App:
             signal_data = await self.meta_model.predict(market_data)
             
             if signal_data:
-                signal = TradingSignal(
+                signal = VNPYTradingSignal(
                     symbol=symbol,
                     action=signal_data['action'],
                     size=signal_data['size'],

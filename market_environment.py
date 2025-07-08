@@ -7,9 +7,18 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import pickle
 from pathlib import Path
+from enum import Enum
+from logger import TradingLogger
+from utils import ConfigManager
+from technical_indicators import TechnicalIndicators
+import numpy as np
+import pandas as pd
+from scipy import stats
+from typing import List, Dict, Optional, Tuple, Any
+from scipy.signal import argrelextrema
+from utils import ConfigManager, TimeUtils
 
-
-class MarketState:
+class MarketState(Enum):
     """市场状态枚举"""
     BULL_TREND = "bull_trend"           # 牛市趋势
     BEAR_TREND = "bear_trend"           # 熊市趋势

@@ -16,7 +16,7 @@ from vnpy.trader.constant import (
 )
 from vnpy.trader.object import (
     TickData, OrderData, TradeData, PositionData,
-    AccountData, ContractData, BarData, OrderRequest
+    AccountData, SubscribeRequest, ContractData, BarData, OrderRequest
 )
 from vnpy.trader.utility import round_to
 

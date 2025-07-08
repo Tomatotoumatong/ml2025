@@ -22,7 +22,7 @@ from logger import TradingLogger
 from utils import ConfigManager, TimeUtils
 from paper_trading_validator import PaperTradingValidator, PerformanceMetrics
 from vnpy_integration import TradingSignal
-
+from pathlib import Path
 
 @dataclass
 class StrategyInstance:

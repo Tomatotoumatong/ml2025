@@ -11,7 +11,7 @@
 import json
 import pickle
 import asyncio
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any, Set, Callable
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
