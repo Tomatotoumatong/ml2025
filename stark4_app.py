@@ -29,7 +29,7 @@ from system_monitor import SystemMonitor
 from fault_tolerance_manager import FaultToleranceManager
 from telegram_notifier import TelegramNotifier
 from system_state_manager import SystemStateManager
-
+from ml_strategy import TradingSignal, TradingAction
 
 class ApplicationState:
     """应用状态枚举"""

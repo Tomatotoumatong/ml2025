@@ -25,15 +25,15 @@ class TradingAction(Enum):
 
 @dataclass
 class TradingSignal:
-    """交易信号数据类"""
     symbol: str
-    action: TradingAction
+    action: TradingAction  # 使用枚举
     confidence: float
     size: float
     price: float
     model_type: str
-    features: Dict[str, float]
     timestamp: int
+    features: Dict[str, float] = None
+    metadata: Dict[str, Any] = None
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -43,8 +43,9 @@ class TradingSignal:
             'size': self.size,
             'price': self.price,
             'model_type': self.model_type,
+            'timestamp': self.timestamp,
             'features': self.features,
-            'timestamp': self.timestamp
+            'metadata': self.metadata
         }
 
 

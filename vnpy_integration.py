@@ -19,7 +19,7 @@ from vnpy.trader.object import (
     AccountData, SubscribeRequest, ContractData, BarData, OrderRequest
 )
 from vnpy.trader.utility import round_to
-
+from ml_strategy import TradingSignal, TradingAction
 from logger import TradingLogger
 from utils import ConfigManager, TimeUtils, PriceUtils
 from risk_manager import RiskManager
@@ -35,18 +35,6 @@ class OrderStatus(Enum):
     REJECTED = "rejected"
     FAILED = "failed"
 
-
-@dataclass
-class TradingSignal:
-    """交易信号"""
-    symbol: str
-    action: str  # buy/sell/hold
-    size: float
-    price: Optional[float] = None
-    confidence: float = 0.0
-    model_type: str = ""
-    timestamp: int = field(default_factory=TimeUtils.now_timestamp)
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
