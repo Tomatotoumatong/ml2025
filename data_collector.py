@@ -9,7 +9,7 @@ from decimal import Decimal
 import pandas as pd
 import numpy as np
 from enum import Enum
-
+import aiohttp
 # 导入基础设施模块
 from logger import TradingLogger
 from utils import ConfigManager, TimeUtils, PriceUtils, RetryDecorator, async_retry
@@ -53,7 +53,12 @@ class MarketDataCollector:
         self.max_reconnect_attempts = self.config.get("collector.max_reconnect_attempts", 10)
         self.reconnect_delay = self.config.get("collector.reconnect_delay", 5)
         self.heartbeat_interval = self.config.get("collector.heartbeat_interval", 30)
-        
+        # 代理配置
+        self.proxy_config = {
+            'http': self.config.get("network.proxy_http", "http://127.0.0.1:7890"),
+            'https': self.config.get("network.proxy_https", "http://127.0.0.1:7890"),
+            'enabled': self.config.get("network.proxy_enabled", True)
+        }
         # 支持的交易所配置
         self.exchanges = {
             DataSource.BINANCE: {
@@ -114,6 +119,8 @@ class MarketDataCollector:
                 # 构建订阅URL
                 ws_url = self._build_websocket_url(exchange, symbols)
                 
+                proxy_connector = aiohttp.TCPConnector()
+                
                 async with websockets.connect(
                     ws_url,
                     ping_interval=self.heartbeat_interval,
@@ -167,7 +174,7 @@ class MarketDataCollector:
                     f"{symbol_lower}@depth20",     # 深度数据
                     f"{symbol_lower}@trade"        # 实时交易
                 ])
-            return f"{base_url}{'@'.join(streams)}"
+            return f"{base_url}{'/'.join(streams)}"
         
         elif exchange == DataSource.OKEX:
             return base_url
@@ -379,14 +386,22 @@ class MarketDataCollector:
         """通过REST API获取数据"""
         config = self.exchanges[exchange]
         base_url = config["rest_url"]
+        connector = aiohttp.TCPConnector()
+        timeout = aiohttp.ClientTimeout(total=30)
         
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(
+            connector=connector,
+            timeout=timeout
+        ) as session:
+            # 添加代理
+            proxy = self.proxy_config['http'] if self.proxy_config['enabled'] else None
+            
             for symbol in symbols:
                 try:
                     if exchange == DataSource.BINANCE:
                         url = f"{base_url}ticker/24hr?symbol={symbol.upper()}"
                         
-                        async with session.get(url) as response:
+                        async with session.get(url, proxy=proxy) as response:
                             if response.status == 200:
                                 data = await response.json()
                                 await self._handle_ticker_data(exchange, data)

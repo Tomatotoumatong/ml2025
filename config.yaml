@@ -1,0 +1,38 @@
+
+database:
+  type: influxdb
+  host: localhost
+  port: 8086
+  database: ml2025_trading
+  username: ""
+  password: ""
+  retention_days: 30
+
+trading:
+  symbols:
+    - BTCUSDT
+    - ETHUSDT
+  exchanges:
+    - binance
+
+collector:
+  max_reconnect_attempts: 10
+  reconnect_delay: 5
+  heartbeat_interval: 30
+  rest_poll_interval: 60
+
+cleaner:
+  outlier_method: modified_zscore
+  outlier_threshold: 3.5
+  imputation_method: linear
+  scaling_method: robust
+  outlier_strategy: cap
+
+pipeline:
+  buffer_size: 1000
+  flush_interval: 60
+
+logging:
+  level: INFO
+  max_bytes: 10485760
+  backup_count: 5

@@ -1,4 +1,3 @@
-
 # database_manager.py - 时序数据库管理
 # =============================================================================
 
@@ -26,11 +25,12 @@ class InfluxDBManager:
         # 数据库配置
         self.host = config.get("database.host", "localhost")
         self.port = config.get("database.port", 8086)
-        self.database = config.get("database.database", "stark4_trading")
+        self.database = config.get("database.database", "ml2025_trading")
         self.username = config.get("database.username", "")
         self.password = config.get("database.password", "")
         self.token = config.get("database.token", "")
         self.org = config.get("database.org", "stark4")
+        self.bucket = config.get("database.bucket", self.database)  # For InfluxDB 2.x
         
         self._init_connection()
     
@@ -40,12 +40,14 @@ class InfluxDBManager:
             url = f"http://{self.host}:{self.port}"
             
             if self.token:
+                # InfluxDB 2.x with token
                 self.client = InfluxDBClient(
                     url=url,
                     token=self.token,
                     org=self.org
                 )
             else:
+                # InfluxDB 1.x with username/password
                 self.client = InfluxDBClient(
                     url=url,
                     username=self.username,
@@ -84,7 +86,8 @@ class InfluxDBManager:
                 .field("volume", float(volume)) \
                 .time(timestamp * 1000000)  # 转换为纳秒
             
-            self.write_api.write(bucket=self.database, record=point)
+            # Always include org parameter for InfluxDB 2.x
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
             
         except Exception as e:
             self.logger.error(f"写入市场数据失败: {e}")
@@ -112,7 +115,7 @@ class InfluxDBManager:
                 .field("confidence", float(confidence)) \
                 .time(timestamp * 1000000)
             
-            self.write_api.write(bucket=self.database, record=point)
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
             
         except Exception as e:
             self.logger.error(f"写入交易信号失败: {e}")
@@ -134,10 +137,34 @@ class InfluxDBManager:
             for metric_name, value in metrics.items():
                 point = point.field(metric_name, float(value))
             
-            self.write_api.write(bucket=self.database, record=point)
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
             
         except Exception as e:
             self.logger.error(f"写入模型指标失败: {e}")
+            raise
+    
+    async def write_trade_data(
+        self,
+        symbol: str,
+        timestamp: int,
+        price: float,
+        quantity: float,
+        is_buyer_maker: bool,
+        measurement: str = "trades"
+    ):
+        """写入交易数据"""
+        try:
+            point = Point(measurement) \
+                .tag("symbol", symbol) \
+                .tag("side", "sell" if is_buyer_maker else "buy") \
+                .field("price", float(price)) \
+                .field("quantity", float(quantity)) \
+                .time(timestamp * 1000000)
+            
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
+            
+        except Exception as e:
+            self.logger.error(f"写入交易数据失败: {e}")
             raise
     
     async def query_market_data(
@@ -149,15 +176,20 @@ class InfluxDBManager:
     ) -> pd.DataFrame:
         """查询市场数据"""
         try:
+            bucket = self.bucket if self.token else self.database
+            
             query = f'''
-            from(bucket: "{self.database}")
+            from(bucket: "{bucket}")
                 |> range(start: {start_time.isoformat()}, stop: {end_time.isoformat()})
                 |> filter(fn: (r) => r._measurement == "{measurement}")
                 |> filter(fn: (r) => r.symbol == "{symbol}")
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             '''
             
-            result = self.query_api.query_data_frame(query)
+            if self.token:
+                result = self.query_api.query_data_frame(query, org=self.org)
+            else:
+                result = self.query_api.query_data_frame(query)
             
             if not result.empty:
                 result['_time'] = pd.to_datetime(result['_time'])
@@ -173,8 +205,10 @@ class InfluxDBManager:
     async def get_latest_price(self, symbol: str, measurement: str = "market_data") -> Optional[float]:
         """获取最新价格"""
         try:
+            bucket = self.bucket if self.token else self.database
+            
             query = f'''
-            from(bucket: "{self.database}")
+            from(bucket: "{bucket}")
                 |> range(start: -1h)
                 |> filter(fn: (r) => r._measurement == "{measurement}")
                 |> filter(fn: (r) => r.symbol == "{symbol}")
@@ -182,7 +216,10 @@ class InfluxDBManager:
                 |> last()
             '''
             
-            result = self.query_api.query_data_frame(query)
+            if self.token:
+                result = self.query_api.query_data_frame(query, org=self.org)
+            else:
+                result = self.query_api.query_data_frame(query)
             
             if not result.empty:
                 return float(result['_value'].iloc[0])
@@ -248,16 +285,20 @@ class InfluxDBManager:
         """获取模型性能历史"""
         try:
             start_time = datetime.now() - timedelta(days=days)
+            bucket = self.bucket if self.token else self.database
             
             query = f'''
-            from(bucket: "{self.database}")
+            from(bucket: "{bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => r._measurement == "model_metrics")
                 |> filter(fn: (r) => r.model_name == "{model_name}")
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             '''
             
-            result = self.query_api.query_data_frame(query)
+            if self.token:
+                result = self.query_api.query_data_frame(query, org=self.org)
+            else:
+                result = self.query_api.query_data_frame(query)
             
             if not result.empty:
                 result['_time'] = pd.to_datetime(result['_time'])
