@@ -1,0 +1,13 @@
+{
+  "pipeline_stats": {
+    "total_processed": 0,
+    "features_generated": 0,
+    "market_states_classified": 0,
+    "errors": 0,
+    "last_update": 1752546994980
+  },
+  "symbols_processed": [],
+  "total_features": 0,
+  "market_state_distribution": {},
+  "feature_statistics": {}
+}
